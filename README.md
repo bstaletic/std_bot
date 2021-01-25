@@ -7,7 +7,7 @@ Be aware that the bot is still in development. Every behaviour is subject to cha
 
 If the feedback is mostly negative and I can't get it to work without annoying the users in the sub, I will deactivate it
 
-I also beg to consider that this is the first program I've every written in Python. If you think it sucks, give me feedback.
+I also beg to consider that this is the first program I've ever written in Python. If you think it sucks, give me feedback.
 
 ## What comments does it respond to and how?
 
