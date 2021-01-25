@@ -40,8 +40,7 @@ class UserSetting(Enum):
 
 link_expiration_delta: timedelta = timedelta(days=1)
 thread_expiration_delta: timedelta = timedelta(weeks=1)
-# sub: str = "cpp_questions"
-sub: str = "test"
+sub: str = "cpp_questions"
 
 link_cache: dict = dict()
 thread_cache: dict = dict()
@@ -322,8 +321,6 @@ def process_comment(comment):
     if comment.link_author == "[deleted]":
         return
 
-    if comment.author != "Narase33": return
-
     body: str = comment.body
 
     log_skip()
@@ -354,15 +351,15 @@ def process_comment(comment):
 
 def start():
     global thread_cache
-    save_obj(thread_cache, "thread_cache")
+    # save_obj(thread_cache, "thread_cache")
     thread_cache = load_obj("thread_cache")
 
     global link_cache
-    save_obj(link_cache, "link_cache")
+    # save_obj(link_cache, "link_cache")
     link_cache = load_obj("link_cache")
 
     global user_settings
-    save_obj(user_settings, "user_settings")
+    # save_obj(user_settings, "user_settings")
     user_settings = load_obj("user_settings")
 
     subreddit: Subreddit = reddit.subreddit(sub)
