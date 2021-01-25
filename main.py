@@ -363,7 +363,7 @@ def start():
     user_settings = load_obj("user_settings")
 
     subreddit: Subreddit = reddit.subreddit(sub)
-    for comment in subreddit.stream.comments():  # skip_existing=True
+    for comment in subreddit.stream.comments(skip_existing=True):  # skip_existing=True
         try:
             global current_thread_id
             current_thread_id = comment.submission.id
