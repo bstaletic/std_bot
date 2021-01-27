@@ -4,9 +4,11 @@ from enum import Enum
 from typing import TextIO
 
 import praw
+import requests
 from praw import Reddit
 from praw.models.comment_forest import CommentForest
-from praw.reddit import Subreddit, Submission, Comment
+from praw.models.listing.mixins.redditor import SubListing
+from praw.reddit import Subreddit, Submission, Comment, Redditor
 
 from datetime import datetime
 from datetime import timedelta
@@ -41,17 +43,18 @@ class UserSetting(Enum):
 link_expiration_delta: timedelta = timedelta(days=1)
 thread_expiration_delta: timedelta = timedelta(weeks=1)
 sub: str = "cpp_questions"
+# sub: str = "test"
 
 link_cache: dict = dict()
 thread_cache: dict = dict()
 user_settings: dict = dict()
 current_thread_id: str
 
-reddit: Reddit = praw.Reddit(client_id="XXXX",
-                             client_secret="XXXX",
-                             user_agent="XXXX",
-                             username="XXXX",
-                             password="XXXX")
+reddit: Reddit = praw.Reddit(client_id="XXX",
+                             client_secret="XXX",
+                             user_agent="XXX",
+                             username="XXX",
+                             password="XXX")
 
 
 def __log(log_line: str):
@@ -59,9 +62,16 @@ def __log(log_line: str):
 
     now: datetime = datetime.now()
     file_name: str = "std_bot_log_{}_{}_{}.txt".format(now.year, now.month, now.day)
-    file: TextIO = open(file_name, "a")
+    file: TextIO = open(file_name.encode("ascii", "ignore"), "a")
     file.write(log_line)
     file.close()
+
+
+def send_bot(message: str):
+    token: str = "XXX"
+    url: str = f'https://api.telegram.org/bot{token}/sendMessage'
+    data = {'chat_id': 111, 'text': message}
+    requests.post(url, data).json()
 
 
 def log(message: str):
@@ -165,6 +175,8 @@ def index(comment):
         comment_list: list = get_all(current_thread_id)
         for comment in comment_list:
             index_comment(comment)
+
+    save_obj(thread_cache, "thread_cache")
 
 
 # ---------- indexing ----------
@@ -281,6 +293,7 @@ def reply_with_links(comment, forced: bool):
 
     log("caching new linked stds: {}".format(", ".join(unlinked_stds)))
     thread_cache[current_thread_id].std_set.update(unlinked_stds)
+    save_obj(thread_cache, "thread_cache")
 
     link_list: list = []
     for std in std_set:
@@ -292,25 +305,34 @@ def reply_with_links(comment, forced: bool):
         log("no std link")
         return
 
-    manual_link: str = "[manual](https://gist.github.com/Narase33/f2c31e5cd5357b35ce32ef0c59a64c0a)"
+    manual_link: str = "[readme](https://github.com/Narase33/std_bot/blob/main/README.md)"
     message: str = "I found the following unlinked functions/types in your comment and linked them:"
     message += "  \n" + ", ".join(link_list)
-    message += "\n\n---\n\n"
-    message += f"^(Please let me know what you think about me. I'm version 0.1.0, last update: 24.01.21){manual_link}."
+    message += "\n\n---"
+    message += "\n\n^(Please let me know what you think about me. I'm version 0.2.2, last update: 26.01.21)"
+    message += "  \n^(Recent changes: Only responding to top comments. Added commands to interact with me.)"
+    message += " " + manual_link
 
     log(message)
 
     save_obj(thread_cache, "thread_cache")
     save_obj(link_cache, "link_cache")
 
+    bot_message: str = f'https://www.reddit.com{comment.permalink}\n{", ".join(std_set)}'
+    if forced:
+        bot_message += "\nforced"
+
+    send_bot(bot_message)
     comment.reply(message)
 
 
 def has_comment(body: str) -> str:
     for line in body.splitlines():
-        line = line.replace("\\_", "_")
+        line = line.replace("\\_", "_").strip("*_")
+
         if line.startswith("!std"):
-            return line.strip()
+            return line
+
     return ""
 
 
@@ -324,12 +346,14 @@ def process_comment(comment):
     body: str = comment.body
 
     log_skip()
-    log("https://www.reddit.com{}\n{}".format(comment.permalink, body))
+    comment_link: str = f"https://www.reddit.com{comment.permalink}"
+    log(f"{comment_link}\n{body}\n\n----- ----- ----- ----- -----\n")
 
     parent = comment.parent()
     author = comment.author
 
     command: str = has_comment(body)
+
     if command == "!std":
         reply_with_links(comment, True)
     elif command == "!std ignore_me":
@@ -337,29 +361,49 @@ def process_comment(comment):
             log(f"user {author} will be ignored from now on")
             user_settings[author] = UserSetting.none
             save_obj(user_settings, "user_settings")
+            send_bot(f"{author} will be ignored from now on")
     elif command == "!std follow_me":
         if isinstance(parent, Comment) and (parent.author == "std_bot") and (author in user_settings):
             log(f"user {author} will be followed again")
             user_settings[author] = UserSetting.top
             save_obj(user_settings, "user_settings")
+            send_bot(f"{author} will be followed again")
     elif comment.is_root:
         if (author in user_settings) and (user_settings[author] == UserSetting.none):
             log("user marked as 'none', ignoring comment")
         else:
             reply_with_links(comment, False)
+    else:
+        log("Comment is neither top comment, nor enforced or command. Ignored")
+
+
+def statistics():
+    redditor: Redditor = reddit.redditor('std_bot')
+    comments: SubListing = redditor.comments
+
+    score: int = 0
+    count: int = 0
+    for comment in comments.new():
+        score += comment.score
+        count += 1
+
+    log(f"Count: {count}")
+    log(f"Score: {score}")
+    log(f"Average: {score / count}")
+    log_skip()
 
 
 def start():
+    send_bot("Checking connection")
+    statistics()
+
     global thread_cache
-    # save_obj(thread_cache, "thread_cache")
     thread_cache = load_obj("thread_cache")
 
     global link_cache
-    # save_obj(link_cache, "link_cache")
     link_cache = load_obj("link_cache")
 
     global user_settings
-    # save_obj(user_settings, "user_settings")
     user_settings = load_obj("user_settings")
 
     subreddit: Subreddit = reddit.subreddit(sub)
