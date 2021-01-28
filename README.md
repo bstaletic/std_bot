@@ -47,6 +47,7 @@ I'm sorry to hear that. Best you can do is to give me some feedback and ignore t
 
 - [ ] Searching with https://en.cppreference.com/w/cpp/symbol_index instead of using their search function for more and better results
 - [ ] Adding other popular frameworks (like boost::)
+- [ ] Recognizing used links even if they're not bound to the token
 
 
 ## TL:DR commands
