@@ -43,6 +43,12 @@ Even if ignored you can still use "**!std**" to manually invoke the bot
 
 I'm sorry to hear that. Best you can do is to give me some feedback and ignore the bot via Reddit
 
+## ToDo
+
+- [ ] Searching with https://en.cppreference.com/w/cpp/symbol_index instead of using their search function for more and better results
+- [ ] Adding other popular frameworks (like boost::)
+
+
 ## TL:DR commands
 
 | Command        | Result                                      |
