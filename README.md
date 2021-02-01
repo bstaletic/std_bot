@@ -45,14 +45,38 @@ Please do not use any markdown symbols. The commands are only recognized if ther
 
 I'm sorry to hear that. Best you can do is to give me some feedback and ignore the bot via Reddit
 
+## Patchnotes
+
+- 0.3:
+
+  - Using symbol index instead of built-in search to find links for tokens
+    - More and better results
+  - Tokens used by OP in code or text will be marked as "linked"
+    - OP probably knows about tokens they use
+
+- 0.2:
+
+  - No longer using "best match" to find a link for a token
+    - Uncertain results are not helpful
+
+  - Only responding to top level comments from now on
+    - To reduce spam
+  - Added commands to interact with bot
+    - **!std ignore_me** makes me ignore you
+    - **!std follow_me** makes me follow you again
+    - **!std** forces linking of your comment even if not top comment or already fully linked
+
+- 0.1:
+
+  - Starting the bot
+
 ## ToDo
 
-- [x] Searching with https://en.cppreference.com/w/cpp/symbol_index instead of using their search function for more and better results
 - [ ] ~~Adding other popular frameworks (like boost::)~~
   - [ ] Probably not possible due to missing search function and symbol index
 - [ ] Recognizing used links even if they're not bound to the token
-- [ ] Tokens used by OP should be added to index as OP probably knows about them
-  - [ ] This should also work if OP uses the 'using' expression (as "std::" normally indicates STL tokens)
+- [x] Tokens used by OP should be added to index as OP probably knows about them
+  - [ ] This should also work if OP uses the 'using namespace std;' expression (as "std::" normally indicates STL tokens)
 
 
 ## TL:DR commands
