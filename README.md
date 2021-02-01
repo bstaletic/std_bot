@@ -11,19 +11,19 @@ I also beg to consider that this is the first program I've ever written in Pytho
 
 ## What comments does it respond to and how?
 
-std_bot responds only to top comments or comments that have "**!std**" at the beginning of any line
+A simplified flow control:
 
-Tokens in quotes (start with ">") or code blocks (start with "    ", 4 spaces) will be ignored
-
-Also if a comment only contains tokens that have been linked previously in other comments (by the bot or any other user) it will be ignored. You can use "**!std**" to enforce linking (but not after editing as the bot only sees new comments)
+![Picture](https://github.com/Narase33/std_bot/blob/main/ControlFlow.bmp)
 
 ## How does the bot get it's results?
 
-The bot starts a search on cppreference.com
+The bot uses https://en.cppreference.com/w/cpp/symbol_index to look for the symbols. Nested symbols like std::chrono::Monday result in multiple requests:
 
-- If the search results in a direct hit, the link is used
-- If the search doesn't have a direct hit, the first result is used
-- If the search doesn't give anything, the token is ignored
+- -> https://en.cppreference.com/w/cpp/symbol_index
+
+- -> https://en.cppreference.com/w/cpp/symbol_index/chrono
+
+- -> https://en.cppreference.com/w/cpp/chrono/weekday
 
 ## How can I give feedback or suggestions?
 
@@ -38,6 +38,8 @@ Just reply with "**!std ignore_me**" to any bot comment and it will ignore your 
 Type "**!std follow_me**" to let it follow you again
 
 Even if ignored you can still use "**!std**" to manually invoke the bot
+
+Please do not use any markdown symbols. The commands are only recognized if there is nothing else in the specific line
 
 ## I'm still annoyed by the bot
 
