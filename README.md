@@ -1,7 +1,9 @@
 # std_bot
 
 ## What does the bot do?
-std_bot searches in r/cpp_questions for STL related stuff (everything "std::\*", calling this "*token*" from now on) and tries to link them with the reference page from [cppreference.com](https://en.cppreference.com/w/)
+std_bot searches in r/cpp_questions for STL related functions or types (everything "std::\*", calling this "*token*" from now on) and tries to link them with the reference page from [cppreference.com](https://en.cppreference.com/w/)
+
+If this bot made a reply to your comment with links, the reply is not supposed to help _you_. It's supposed to help OP because you introduced new tokens OP probably doesn't know about. So the links provided by this bot are for OP to have a quick look at what you're talking about. I'm fully aware that everyone who uses a token knows about it and doesn't need a link.
 
 Be aware that the bot is still in development. Every behaviour is subject to change
 
