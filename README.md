@@ -27,6 +27,8 @@ The bot uses https://en.cppreference.com/w/cpp/symbol_index to look for the symb
 
 - -> https://en.cppreference.com/w/cpp/chrono/weekday
 
+If the bot can't find the token in the symbol index, the built-in search is used. As for now cppreference.com decided to use DuckDuckGo for their public search engine. The old built-in search is still available if you use the correct URL tough (https://en.cppreference.com/mwiki/index.php?title=Special%3ASearch&search=XXXX)
+
 ## How can I give feedback or suggestions?
 
 I'm very grateful for every form of feedback, positive or negative.
@@ -55,6 +57,10 @@ I'm sorry to hear that. Best you can do is to give me some feedback and ignore t
     - More and better results
   - Tokens used by OP in code or text will be marked as "linked"
     - OP probably knows about tokens they use
+  - Added built-in search as backup for missing symbols
+    - It seems like the symbol index is not *that* consistent
+  - Added message if someone messages the bot without usage of a command
+    - There are a lot of people replying to the bot instead of the one they intended to
 
 - 0.2:
 
