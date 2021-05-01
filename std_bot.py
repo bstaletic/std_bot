@@ -34,12 +34,14 @@ class Link:
 
 
 class Thread:
-    def __init__(self, expires):
+    def __init__(self, _expires, _id):
+        self.id: str = _id
         self.std_set: set = set()
-        self.expires: datetime = expires
+        self.link_set: set = set()
+        self.expires: datetime = _expires
 
     def __str__(self):
-        return "[id: " + str(self.std_set) + ", expires: " + str(self.expires) + "]"
+        return "[id: " + self.id + ", expires: " + str(self.expires) + "]"
 
 
 class UserSetting(Enum):
@@ -168,17 +170,7 @@ def index_line(line: str):
         token_start_pos = line.find("[", link_end_pos + 1)
 
 
-def index_op(submission: Submission):
-    line: str
-    for line in submission.selftext.splitlines():
-        if line.startswith(">"):
-            continue
-
-        line = line.replace("\\_", "_")
-        index_op_line(line)
-
-
-def index_free_link_line(line: str) -> set:
+def index_free_link_line(line: str):
     links: set = set()
 
     token_start_pos: int = line.find("http")
@@ -189,23 +181,22 @@ def index_free_link_line(line: str) -> set:
             token_start_pos = line.find("http", token_end_pos)
         else:
             links.add(line[token_start_pos:])
-            return links
+            break
 
-    return links
+    thread_cache[current_thread_id].link_set.update(links)
 
 
-def index_free_links(comment: Comment) -> set:
-    links: set = set()
-
+def index_op(submission: Submission):
     line: str
-    for line in comment.body.splitlines():
-        if line.startswith(">") or line.startswith("    ") or line.startswith("\t"):
+
+    index_line(submission.title)
+    for line in submission.selftext.splitlines():
+        if line.startswith(">"):
             continue
 
         line = line.replace("\\_", "_")
-        links.update(index_free_link_line(line))
-
-    return links
+        index_op_line(line)
+        index_free_link_line(line)
 
 
 def index_user_comment(comment: Comment):
@@ -216,6 +207,7 @@ def index_user_comment(comment: Comment):
 
         line = line.replace("\\_", "_")
         index_line(line)
+        index_free_link_line(line)
 
 
 def index(comment):
@@ -224,7 +216,7 @@ def index(comment):
         index_user_comment(comment)
     else:
         log("indexing unknown thread")
-        thread_cache[current_thread_id] = Thread(expires=datetime.now() + thread_expiration_delta)
+        thread_cache[current_thread_id] = Thread(_expires=datetime.now() + thread_expiration_delta, _id=current_thread_id)
 
         submission: Submission = reddit.submission(current_thread_id)
         index_op(submission)
@@ -350,8 +342,7 @@ def reply_with_links(comment, forced: bool):
         return
 
     # Removing free links
-    free_links: set = index_free_links(comment)
-    for free_link in free_links:
+    for free_link in thread_cache[current_thread_id].link_set:
         for online_link in link_list:
             if free_link == online_link[1]:
                 link_list.remove(online_link)
@@ -478,11 +469,11 @@ def debug_comment():
 
 def start():
     global reddit
-    reddit = praw.Reddit(client_id="XXXX",
-                         client_secret="XXXX",
-                         user_agent="XXXX",
+    reddit = praw.Reddit(client_id="XXX",
+                         client_secret="XXX",
+                         user_agent="XXX",
                          username="std_bot",
-                         password="XXXX")
+                         password="XXX")
 
     send_bot("bot starting")
 
