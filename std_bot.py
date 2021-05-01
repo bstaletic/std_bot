@@ -1,6 +1,9 @@
+import traceback
 import urllib.request
 
 import pickle5 as pickle
+# import pickle as pickle
+
 import sys
 from enum import Enum
 from time import sleep
@@ -46,8 +49,7 @@ class UserSetting(Enum):
 
 link_expiration_delta: timedelta = timedelta(weeks=1)
 thread_expiration_delta: timedelta = timedelta(weeks=1)
-signature: str = "\n\n---\n\n^(Last update: 07.03.21. Recent changes: Fixed OP usages of tokens)\
-    [readme](https://github.com/Narase33/std_bot/blob/main/README.md) "
+signature: str = "\n\n---\n\n^(Last update: 01.05.21. Last change: Free links considered) [readme](https://github.com/Narase33/std_bot/blob/main/README.md)"
 sub: str = "cpp_questions"
 # sub: str = "test"
 
@@ -73,9 +75,9 @@ def __log(log_line: str):
 
 
 def send_bot(message: str):
-    token: str = "XXXX"
+    token: str = "1546898859:AAFHlRL4qUNFHFdZqcpGTt7KNZHlzlFdTLE"
     url: str = f'https://api.telegram.org/bot{token}/sendMessage'
-    data = {'chat_id': 0000, 'text': message}
+    data = {'chat_id': 606500329, 'text': message}
     requests.post(url, data).json()
 
 
@@ -176,6 +178,36 @@ def index_op(submission: Submission):
         index_op_line(line)
 
 
+def index_free_link_line(line: str) -> set:
+    links: set = set()
+
+    token_start_pos: int = line.find("http")
+    while token_start_pos != -1:
+        token_end_pos: int = line.find(" ", token_start_pos + 1)
+        if token_end_pos != -1:
+            links.add(line[token_start_pos: token_end_pos+1])
+            token_start_pos = line.find("http", token_end_pos)
+        else:
+            links.add(line[token_start_pos:])
+            return links
+
+    return links
+
+
+def index_free_links(comment: Comment) -> set:
+    links: set = set()
+
+    line: str
+    for line in comment.body.splitlines():
+        if line.startswith(">") or line.startswith("    ") or line.startswith("\t"):
+            continue
+
+        line = line.replace("\\_", "_")
+        links.update(index_free_link_line(line))
+
+    return links
+
+
 def index_user_comment(comment: Comment):
     line: str
     for line in comment.body.splitlines():
@@ -251,7 +283,6 @@ def parse_body(body) -> set:
 
     return std_set
 
-
 # ---------- comment parsing ----------
 
 
@@ -288,7 +319,7 @@ def find_links_for_std_list(std_set: set) -> list:
     for std in std_set:
         _link: str = find_link_for_single_std(std)
         if (_link is not None) and (len(_link) > 0):
-            link_list.append("[{}]({})".format(std, _link))
+            link_list.append((std, _link))
     return link_list
 
 
@@ -296,6 +327,7 @@ def reply_with_links(comment, forced: bool):
     check_cache_for_expiration(link_cache)
     check_cache_for_expiration(thread_cache)
 
+    # Get every STD
     std_set: set = parse_body(comment.body)
     if len(std_set) == 0:
         log(f'no stds found')
@@ -303,6 +335,7 @@ def reply_with_links(comment, forced: bool):
 
     log(f'stds found: {", ".join(std_set)}')
 
+    # Removing cached STDs
     unlinked_stds: set = std_set - thread_cache[current_thread_id].std_set
     if (len(unlinked_stds)) == 0 and not forced:
         log("every std already linked")
@@ -310,12 +343,29 @@ def reply_with_links(comment, forced: bool):
 
     cache_unlinked_stds(unlinked_stds)
 
+    # Getting links for every STD
     link_list: list = find_links_for_std_list(std_set)
     if len(link_list) == 0:
         log("no std links found")
         return
 
-    message: str = f'Unlinked STL entries: {", ".join(link_list)}' + signature
+    # Removing free links
+    free_links: set = index_free_links(comment)
+    for free_link in free_links:
+        for online_link in link_list:
+            if free_link == online_link[1]:
+                link_list.remove(online_link)
+
+    if len(link_list) == 0:
+        log("no std links found")
+        return
+
+    # Add STDs and links together
+    link_list_transformed: list = list()
+    for std_link in link_list:
+        link_list_transformed.append("[{}]({})".format(std_link[0], std_link[1]))
+
+    message: str = f'Unlinked STL entries: {", ".join(link_list_transformed)}' + signature
 
     bot_message: str = f'https://www.reddit.com{comment.permalink}\n{", ".join(std_set)}'
     if forced:
@@ -336,7 +386,7 @@ def has_command(body: str) -> str:
     return ""
 
 
-def message_to_bot(comment):
+def message_to_bot(comment) -> bool:
     bot_message: str = f'https://www.reddit.com{comment.permalink}\nMessage to me:\n{comment.body}'
     send_bot(bot_message)
 
@@ -345,12 +395,14 @@ def message_to_bot(comment):
         log(f"user {comment.author} will be ignored from now on")
         user_settings[comment.author] = UserSetting.none
         save_obj(user_settings, "user_settings")
+        return True
     elif command == "!std follow_me":
         log(f"user {comment.author} will be followed again")
         user_settings[comment.author] = UserSetting.top
         save_obj(user_settings, "user_settings")
-    elif command == "":
-        comment.reply("Hello, is it possible that you wanted to reply to somebody else? I'm just a bot =)" + signature);
+        return True
+
+    return False
 
 
 def process_comment(comment):
@@ -367,8 +419,8 @@ def process_comment(comment):
     index(comment)
 
     if isinstance(comment.parent(), Comment) and (comment.parent().author == "std_bot"):
-        message_to_bot(comment)
-        return
+        if message_to_bot(comment):
+            return
 
     forced: bool = has_command(comment.body).startswith("!std")
     if comment.is_root:
@@ -410,7 +462,7 @@ def load_storages():
 
 
 def debug_comment():
-    _id: str = "gmqu0o0"
+    _id: str = "gvx475e"
 
     comment = reddit.comment(_id)
 
@@ -418,7 +470,8 @@ def debug_comment():
     current_thread_id = comment.submission.id
 
     global thread_cache
-    thread_cache.pop(current_thread_id)
+    if current_thread_id in thread_cache:
+        thread_cache.pop(current_thread_id)
 
     process_comment(comment)
 
@@ -427,15 +480,15 @@ def start():
     global reddit
     reddit = praw.Reddit(client_id="XXXX",
                          client_secret="XXXX",
-                         user_agent="u/std_bot",
+                         user_agent="XXXX",
                          username="std_bot",
                          password="XXXX")
 
     send_bot("bot starting")
 
     statistics()
-    load_storages()
 
+    load_storages()
     # debug_comment()
 
     subreddit: Subreddit = reddit.subreddit(sub)
@@ -448,9 +501,10 @@ def start():
             log(str(error))
             send_bot(f"server error:\n{str(error)}")
             sleep(60)
-        except:
-            log(f"error during process!\nComment:\n{comment.body}\n\nError:\n{sys.exc_info()[0]}")
-            send_bot(f"error during process: {comment.submission.id}")
+        except Exception as e2:
+            trace2: str = f"\n{e2}\n{traceback.format_exc()}"
+            log(f"error during process!\nComment:\n{comment.body}\n\nError:\n{sys.exc_info()[0]}{trace2}")
+            send_bot(f"error during process: {comment.submission.id}{trace2}")
             sleep(60)
 
 
@@ -465,13 +519,13 @@ def can_connect(host='http://google.com'):
 if __name__ == '__main__':
     while True:
         try:
-            if can_connect:
+            if can_connect():
                 start()
             else:
                 sleep(60)
                 send_bot("could not connect to internet")
-                continue
-        except:
-            log(f"something went really wrong!\nError:\n{sys.exc_info()[0]}")
-            send_bot("really bad error.")
+        except Exception as e:
+            trace: str = f"\n{e}\n{traceback.format_exc()}"
+            log(f"something went really wrong!\nError:\n{sys.exc_info()[0]}{trace}")
+            send_bot(f"really bad error.{trace}")
             sleep(60)
