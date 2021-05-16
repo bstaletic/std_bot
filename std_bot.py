@@ -48,7 +48,7 @@ class Link:
         self.expires: datetime = expires
 
     def __str__(self):
-        return "[link: " + (self.link or "[None]") + ", expires: " + str(self.expires) + "]"
+        return f"[link: {self.link or '[None]'}, expires: {self.expires}]"
 
 
 class Thread:
@@ -59,7 +59,7 @@ class Thread:
         self.expires: datetime = _expires
 
     def __str__(self):
-        return "[id: " + self.id + ", expires: " + str(self.expires) + "]"
+        return f"[id: {self.id}, expires: {self.expires}]"
 
 
 class UserSetting(Enum):
@@ -124,12 +124,12 @@ def check_cache_for_expiration(cache: dict):
 
 
 def save_obj(obj, name):
-    with open('obj/' + name + '.pkl', 'wb+') as f:
+    with open(f'obj/{name}.pkl', 'wb+') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
 def load_obj(name):
-    with open('obj/' + name + '.pkl', 'rb') as f:
+    with open(f'obj/{name}.pkl', 'rb') as f:
         return pickle.load(f)
 
 
@@ -373,7 +373,7 @@ def reply_with_links(comment, forced: bool):
     # Add STDs and links together
     link_list_transformed: list = list()
     for std_link in link_list:
-        link_list_transformed.append("[{}]({})".format(std_link[0], std_link[1]))
+        link_list_transformed.append(f"[{std_link[0]}]({std_link[1]})")
 
     message: str = f'Unlinked STL entries: {", ".join(link_list_transformed)}' + signature
 
