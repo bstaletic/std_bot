@@ -519,11 +519,8 @@ def start():
 
 
 def can_connect(host='http://google.com'):
-    try:
-        urllib.request.urlopen(host)
-        return True
-    except:
-        return False
+    status = requests.get(host).status_code
+    return status < 400 || status >= 600
 
 
 if __name__ == '__main__':
